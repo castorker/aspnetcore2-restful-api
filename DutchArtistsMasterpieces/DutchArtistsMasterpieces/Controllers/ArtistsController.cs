@@ -1,5 +1,6 @@
 ﻿using DutchArtistsMasterpieces.Models;
 using DutchArtistsMasterpieces.Services;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -133,6 +134,81 @@ namespace DutchArtistsMasterpieces.Controllers
             artistToUpdate.ImageUrl = artist.ImageUrl;
             artistToUpdate.ImageThumbnailUrl = artist.ImageThumbnailUrl;
             artistToUpdate.IsArtistOfTheMonth = (artist.Birth == null) ? false : (artist.Birth.Month == DateTime.Now.Month ? true : false);
+
+            return NoContent();
+        }
+
+        // http://localhost:50919/api/artists/6
+        [HttpPatch("{artistId}")]
+        public IActionResult PartiallyUpdateArtist(int artistId, [FromBody] JsonPatchDocument<ArtistForUpdateDto> patchDoc)
+        {
+            if (patchDoc == null)
+            {
+                return BadRequest();
+            }
+
+            var artistToUpdate = InMemoryDataStore.Current.Artists.FirstOrDefault(a => a.Id == artistId);
+
+            if (artistToUpdate == null)
+            {
+                return NotFound();
+            }
+
+            var artistToPatch = new ArtistForUpdateDto()
+            {
+                Name = artistToUpdate.Name,
+                City = artistToUpdate.City,
+                BirthYear = artistToUpdate.BirthYear,
+                Birth = artistToUpdate.Birth,
+                DeathYear = artistToUpdate.DeathYear,
+                Death = artistToUpdate.Death,
+                ShortDescription = artistToUpdate.ShortDescription,
+                LongDescription = artistToUpdate.LongDescription,
+                ImageUrl = artistToUpdate.ImageUrl,
+                ImageThumbnailUrl = artistToUpdate.ImageThumbnailUrl,
+                IsArtistOfTheMonth = artistToUpdate.IsArtistOfTheMonth
+            };
+
+            patchDoc.ApplyTo(artistToPatch, ModelState);
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (artistToPatch.ShortDescription == artistToPatch.Name)
+            {
+                ModelState.AddModelError("Short Description", "The provided short description should be different from the name.");
+            }
+
+            if (artistToPatch.LongDescription == artistToPatch.Name)
+            {
+                ModelState.AddModelError("Long Description", "The provided long description should be different from the name.");
+            }
+
+            if (artistToPatch.LongDescription == artistToPatch.ShortDescription)
+            {
+                ModelState.AddModelError("Long Description", "The provided long description should be different from the short description.");
+            }
+
+            TryValidateModel(artistToPatch);
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            artistToUpdate.Name = artistToPatch.Name;
+            artistToUpdate.City = artistToPatch.City;
+            artistToUpdate.BirthYear = artistToPatch.BirthYear;
+            artistToUpdate.Birth = artistToPatch.Birth;
+            artistToUpdate.DeathYear = artistToPatch.DeathYear;
+            artistToUpdate.Death = artistToPatch.Death;
+            artistToUpdate.ShortDescription = artistToPatch.ShortDescription;
+            artistToUpdate.LongDescription = artistToPatch.LongDescription;
+            artistToUpdate.ImageUrl = artistToPatch.ImageUrl;
+            artistToUpdate.ImageThumbnailUrl = artistToPatch.ImageThumbnailUrl;
+            artistToUpdate.IsArtistOfTheMonth = (artistToPatch.Birth == null) ? false : (artistToPatch.Birth.Month == DateTime.Now.Month ? true : false);
 
             return NoContent();
         }
