@@ -63,7 +63,7 @@ namespace DutchArtistsMasterpieces.Controllers
             }
 
             // get the next artist Id - to be improved
-            var maxArtistId = InMemoryDataStore.Current.Artists.Max(i => i.Id);
+            var maxArtistId = InMemoryDataStore.Current.Artists.Any() ? InMemoryDataStore.Current.Artists.Max(i => i.Id) : 0;
             var nextArtistId = ++maxArtistId;
 
             var newArtist = new ArtistDto()
@@ -209,6 +209,22 @@ namespace DutchArtistsMasterpieces.Controllers
             artistToUpdate.ImageUrl = artistToPatch.ImageUrl;
             artistToUpdate.ImageThumbnailUrl = artistToPatch.ImageThumbnailUrl;
             artistToUpdate.IsArtistOfTheMonth = (artistToPatch.Birth == null) ? false : (artistToPatch.Birth.Month == DateTime.Now.Month ? true : false);
+
+            return NoContent();
+        }
+
+        // http://localhost:52797/api/artists/6
+        [HttpDelete("{artistId}")]
+        public IActionResult DeleteArtist(int artistId)
+        {
+            var artistToDelete = InMemoryDataStore.Current.Artists.FirstOrDefault(a => a.Id == artistId);
+
+            if (artistToDelete == null)
+            {
+                return NotFound();
+            }
+
+            InMemoryDataStore.Current.Artists.Remove(artistToDelete);
 
             return NoContent();
         }
