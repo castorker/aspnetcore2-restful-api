@@ -1,5 +1,6 @@
 ﻿using DutchArtistsMasterpieces.Models;
 using DutchArtistsMasterpieces.Services;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -161,6 +162,81 @@ namespace DutchArtistsMasterpieces.Controllers
             artworkToUpdate.ImageUrl = artwork.ImageUrl;
             artworkToUpdate.ImageThumbnailUrl = artwork.ImageThumbnailUrl;
             artworkToUpdate.Source = artwork.Source;
+
+            return NoContent();
+        }
+
+        // Partially Updating a Resource
+        // http://localhost:50919/api/artists/6/artworks/16
+        [HttpPatch("{artistId}/artworks/{artworkId}")]
+        public IActionResult PartiallyUpdateArtwork(int artistId, int artworkId, [FromBody] JsonPatchDocument<ArtworkForUpdateDto> patchDoc)
+        {
+            if (patchDoc == null)
+            {
+                return BadRequest();
+            }
+
+            var artist = InMemoryDataStore.Current.Artists.FirstOrDefault(a => a.Id == artistId);
+
+            if (artist == null)
+            {
+                return NotFound();
+            }
+
+            var artworkToUpdate = artist.Artworks.FirstOrDefault(a => a.Id == artworkId);
+
+            if (artworkToUpdate == null)
+            {
+                return NotFound();
+            }
+
+            var artworkToPatch = new ArtworkForUpdateDto()
+            {
+                Title = artworkToUpdate.Title,
+                Year = artworkToUpdate.Year,
+                ShortDescription = artworkToUpdate.ShortDescription,
+                LongDescription = artworkToUpdate.LongDescription,
+                ImageUrl = artworkToUpdate.ImageUrl,
+                ImageThumbnailUrl = artworkToUpdate.ImageThumbnailUrl,
+                Source = artworkToUpdate.Source
+            };
+
+            patchDoc.ApplyTo(artworkToPatch, ModelState);
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (artworkToPatch.ShortDescription == artworkToPatch.Title)
+            {
+                ModelState.AddModelError("Short Description", "The provided short description should be different from the title.");
+            }
+
+            if (artworkToPatch.LongDescription == artworkToPatch.Title)
+            {
+                ModelState.AddModelError("Long Description", "The provided long description should be different from the title.");
+            }
+
+            if (artworkToPatch.LongDescription == artworkToPatch.ShortDescription)
+            {
+                ModelState.AddModelError("Long Description", "The provided long description should be different from the short description.");
+            }
+
+            TryValidateModel(artworkToPatch);
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            artworkToUpdate.Title = artworkToPatch.Title;
+            artworkToUpdate.Year = artworkToPatch.Year;
+            artworkToUpdate.ShortDescription = artworkToPatch.ShortDescription;
+            artworkToUpdate.LongDescription = artworkToPatch.LongDescription;
+            artworkToUpdate.ImageUrl = artworkToPatch.ImageUrl;
+            artworkToUpdate.ImageThumbnailUrl = artworkToPatch.ImageThumbnailUrl;
+            artworkToUpdate.Source = artworkToPatch.Source;
 
             return NoContent();
         }
