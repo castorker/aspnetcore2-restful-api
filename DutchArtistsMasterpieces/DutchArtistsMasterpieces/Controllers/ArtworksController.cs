@@ -1,4 +1,5 @@
-﻿using DutchArtistsMasterpieces.Services;
+﻿using DutchArtistsMasterpieces.Models;
+using DutchArtistsMasterpieces.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -50,6 +51,63 @@ namespace DutchArtistsMasterpieces.Controllers
             }
 
             return Ok(artwork);
+        }
+
+        // http://localhost:50919/api/artists/1/artworks
+        [HttpPost("{artistId}/artworks")]
+        public IActionResult CreateArtwork(int artistId, [FromBody] ArtworkForCreationDto artwork)
+        {
+            if (artwork == null)
+            {
+                return BadRequest();
+            }
+
+            if (artwork.ShortDescription == artwork.Title)
+            {
+                ModelState.AddModelError("Short Description", "The provided short description should be different from the title.");
+            }
+
+            if (artwork.LongDescription == artwork.Title)
+            {
+                ModelState.AddModelError("Long Description", "The provided long description should be different from the title.");
+            }
+
+            if (artwork.LongDescription == artwork.ShortDescription)
+            {
+                ModelState.AddModelError("Long Description", "The provided long description should be different from the short description.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var artist = InMemoryDataStore.Current.Artists.FirstOrDefault(a => a.Id == artistId);
+
+            if (artist == null)
+            {
+                return NotFound();
+            }
+
+            // get the next artwork Id - to be improved
+            var maxArtworkId = InMemoryDataStore.Current.Artists.SelectMany(a => a.Artworks).Any() ? InMemoryDataStore.Current.Artists.SelectMany(a => a.Artworks).Max(i => i.Id) : 0;
+            var nextArtworkId = ++maxArtworkId;
+
+            var newArtwork = new ArtworkDto()
+            {
+                Id = nextArtworkId,
+                Title = artwork.Title,
+                Year = artwork.Year,
+                ShortDescription = artwork.ShortDescription,
+                LongDescription = artwork.LongDescription,
+                ImageUrl = artwork.ImageUrl,
+                ImageThumbnailUrl = artwork.ImageThumbnailUrl,
+                Source = artwork.Source,
+            };
+
+            artist.Artworks.Add(newArtwork);
+
+            return CreatedAtRoute("GetArtworkByIdForAnArtist", new { artistId, artworkId = newArtwork.Id }, newArtwork);
         }
     }
 }
