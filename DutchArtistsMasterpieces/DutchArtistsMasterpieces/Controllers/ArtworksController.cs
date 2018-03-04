@@ -240,5 +240,29 @@ namespace DutchArtistsMasterpieces.Controllers
 
             return NoContent();
         }
+
+        // Delete a Resource
+        // http://localhost:50919/api/artists/6/artworks/16
+        [HttpDelete("{artistId}/artworks/{artworkId}")]
+        public IActionResult DeleteArtwork(int artistId, int artworkId)
+        {
+            var artist = InMemoryDataStore.Current.Artists.FirstOrDefault(a => a.Id == artistId);
+
+            if (artist == null)
+            {
+                return NotFound();
+            }
+
+            var artworkToDelete = artist.Artworks.FirstOrDefault(a => a.Id == artworkId);
+
+            if (artworkToDelete == null)
+            {
+                return NotFound();
+            }
+
+            artist.Artworks.Remove(artworkToDelete);
+
+            return NoContent();
+        }
     }
 }
