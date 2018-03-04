@@ -109,5 +109,60 @@ namespace DutchArtistsMasterpieces.Controllers
 
             return CreatedAtRoute("GetArtworkByIdForAnArtist", new { artistId, artworkId = newArtwork.Id }, newArtwork);
         }
+
+        // Full Updating a Resource
+        // http://localhost:50919/api/artists/6/artworks/1
+        [HttpPut("{artistId}/artworks/{artworkId}")]
+        public IActionResult UpdateArtwork(int artistId, int artworkId, [FromBody] ArtworkForUpdateDto artwork)
+        {
+            if (artwork == null)
+            {
+                return BadRequest();
+            }
+
+            if (artwork.ShortDescription == artwork.Title)
+            {
+                ModelState.AddModelError("Short Description", "The provided short description should be different from the title.");
+            }
+
+            if (artwork.LongDescription == artwork.Title)
+            {
+                ModelState.AddModelError("Long Description", "The provided long description should be different from the title.");
+            }
+
+            if (artwork.LongDescription == artwork.ShortDescription)
+            {
+                ModelState.AddModelError("Long Description", "The provided long description should be different from the short description.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var artist = InMemoryDataStore.Current.Artists.FirstOrDefault(a => a.Id == artistId);
+
+            if (artist == null)
+            {
+                return NotFound();
+            }
+
+            var artworkToUpdate = artist.Artworks.FirstOrDefault(a => a.Id == artworkId);
+
+            if (artworkToUpdate == null)
+            {
+                return NotFound();
+            }
+
+            artworkToUpdate.Title = artwork.Title;
+            artworkToUpdate.Year = artwork.Year;
+            artworkToUpdate.ShortDescription = artwork.ShortDescription;
+            artworkToUpdate.LongDescription = artwork.LongDescription;
+            artworkToUpdate.ImageUrl = artwork.ImageUrl;
+            artworkToUpdate.ImageThumbnailUrl = artwork.ImageThumbnailUrl;
+            artworkToUpdate.Source = artwork.Source;
+
+            return NoContent();
+        }
     }
 }
