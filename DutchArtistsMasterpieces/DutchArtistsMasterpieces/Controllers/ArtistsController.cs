@@ -16,7 +16,7 @@ namespace DutchArtistsMasterpieces.Controllers
         [HttpGet()]
         public IActionResult GetArtists()
         {
-            return Ok(InMemoryDataStore.Current.Artists.OrderBy(a => a.Id));
+            return Ok(InMemoryDataStore.Current.Artists.OrderBy(a => a.Id).ToList());
         }
 
         // http://localhost:50919/api/artists/1
